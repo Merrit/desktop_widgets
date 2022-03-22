@@ -1,12 +1,8 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:bitsdojo_window/bitsdojo_window.dart';
-import 'package:flutter_acrylic/flutter_acrylic.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import 'package:window_size/window_size.dart' as window;
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 
 import 'sample_item.dart';
@@ -27,8 +23,6 @@ class SampleItemListView extends StatefulWidget {
 }
 
 class _SampleItemListViewState extends State<SampleItemListView> {
-  String _time = 'time!';
-  String _date = 'date!';
   double _volumeAsDouble = 0.00;
   String _volumeAsPercentage = '';
   bool _muted = false;
@@ -36,25 +30,9 @@ class _SampleItemListViewState extends State<SampleItemListView> {
   @override
   void initState() {
     super.initState();
-    // setWindowEffect(effect);
-    _getTime();
     getVolume();
     getMuteState();
     subscribeToVolume();
-    Timer.periodic(Duration(seconds: 10), (_) {
-      _getTime();
-    });
-  }
-
-  void _getTime() {
-    final dateTime = DateTime.now();
-    // MM/dd/yyyy
-    final formattedTime = DateFormat('h:mm a').format(dateTime);
-    final formattedDate = DateFormat('EEEE, MMMM d').format(dateTime);
-    setState(() {
-      _time = formattedTime;
-      _date = formattedDate;
-    });
   }
 
   Future<String> getSinks() async {
@@ -139,32 +117,10 @@ class _SampleItemListViewState extends State<SampleItemListView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.pink.withAlpha(20),
+      // backgroundColor: Colors.transparent,
       body: Column(
         children: [
-          Card(
-            child: Container(
-              padding: EdgeInsets.all(15),
-              child: Column(
-                children: [
-                  Text(
-                    _time,
-                    style: TextStyle(
-                      fontSize: 50,
-                      color: Colors.grey[300],
-                    ),
-                  ),
-                  Text(
-                    _date,
-                    style: TextStyle(
-                      fontSize: 17,
-                      color: Colors.grey[300],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
           Card(
             child: Container(
               // width: 300,
@@ -186,39 +142,6 @@ class _SampleItemListViewState extends State<SampleItemListView> {
               ),
             ),
           ),
-          // IconButton(
-          //   onPressed: () async {
-          //     // appWindow.maximize();
-          //     // setWindowEffect(AcrylicEffect.transparent);
-          //     // final result = await window.();
-          //     // print(result);
-          //     print('hi');
-          //   },
-          //   icon: Icon(Icons.hot_tub),
-          // ),
-          // IconButton(
-          //   onPressed: () async {
-          //     final currentScreen = await window.getCurrentScreen();
-          //     if (currentScreen == null) return;
-          //     final screenFrame = currentScreen.visibleFrame;
-          //     window.setWindowFrame(screenFrame);
-          //     final box = await Hive.openBox('screen');
-          //     await box.put(
-          //       'previousRect',
-          //       {
-          //         'left': screenFrame.left,
-          //         'top': screenFrame.top,
-          //         'right': screenFrame.right,
-          //         'bottom': screenFrame.bottom,
-          //       },
-          //     );
-          //     // currentScreen.visibleFrame.
-          //     // window.set
-          //     // currentScreen.visibleFrame
-          //     var end;
-          //   },
-          //   icon: Icon(Icons.close),
-          // ),
         ],
       ),
     );

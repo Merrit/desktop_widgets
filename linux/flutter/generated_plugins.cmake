@@ -3,8 +3,9 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  bitsdojo_window_linux
   flutter_acrylic
+  system_tray
+  window_manager
   window_size
 )
 

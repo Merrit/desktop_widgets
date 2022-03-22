@@ -1,67 +1,102 @@
-import 'package:bitsdojo_window/bitsdojo_window.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_acrylic/flutter_acrylic.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import 'package:window_size/window_size.dart' as window;
+import 'dart:io';
 
-import 'src/app.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_acrylic/flutter_acrylic.dart' hide Window;
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:system_tray/system_tray.dart';
+import 'package:window_manager/window_manager.dart';
+
+import 'src/app/app_widget.dart';
+import 'src/app/cubit/app_cubit.dart';
+import 'src/settings/cubit/settings_cubit.dart';
 import 'src/settings/settings_controller.dart';
 import 'src/settings/settings_service.dart';
+import 'src/window/window.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await windowManager.ensureInitialized();
   await Acrylic.initialize();
-
   await Hive.initFlutter();
-  // await Window.initialize();
 
-  // await Acrylic.setEffect(
-  //   effect: WindowEffect.mica,
-  //   dark: true,
-  // );
-
-  // Set up the SettingsController, which will glue user settings to multiple
-  // Flutter Widgets.
-  final settingsController = SettingsController(SettingsService());
-
-  // Load the user's preferred theme while the splash screen is displayed.
-  // This prevents a sudden theme change when the app is first displayed.
+  final settingsBox = await Hive.openBox('settings');
+  final widgetsBox = await Hive.openBox('widgets');
+  final settingsService = SettingsService(
+    settingsBox: settingsBox,
+    widgetsBox: widgetsBox,
+  );
+  final settingsController = SettingsController(settingsService);
   await settingsController.loadSettings();
+  final _settingsCubit = SettingsCubit(settingsService);
 
-  // Run the app and pass in the SettingsController. The app listens to the
-  // SettingsController for changes, then passes it further down to the
-  // SettingsView.
-  runApp(MyApp(settingsController: settingsController));
+  final _windowManager = WindowManager.instance;
+  final window = Window(windowManager: _windowManager);
 
-  final box = await Hive.openBox('screen');
-  final rawMap = box.get('previousRect');
-  Map<String, double>? previousRect;
-  if (rawMap != null) {
-    previousRect = Map<String, double>.from(rawMap);
-  }
-  showWindow(previousRect);
+  final _appCubit = AppCubit(
+    settingsCubit: _settingsCubit,
+    settingsService: settingsService,
+    window: window,
+  );
 
-  // doWhenWindowReady(() {
-  //   final box = await Hive.openBox('screen');
-  //   final initialSize = Size(600, 450);
-  //   appWindow.minSize = initialSize;
-  //   appWindow.size = initialSize;
-  //   appWindow.alignment = Alignment.center;
-  //   appWindow.show();
-  // });
+  await initSystemTray(window);
+
+  _windowManager.waitUntilReadyToShow().then((_) async {
+    await _windowManager.setTitleBarStyle('hidden');
+    final windowPosition = settingsService.getSavedWindowPosition() ??
+        const Rect.fromLTWH(0, 0, 800, 600);
+    await _windowManager.setBounds(windowPosition);
+    await _windowManager.setMinimizable(false);
+    await _windowManager.setClosable(false);
+    await _windowManager.setMovable(false);
+    await _windowManager.setResizable(false);
+    await _windowManager.setSkipTaskbar(false);
+    await _windowManager.maximize();
+    await _windowManager.show();
+  });
+
+  runApp(
+    MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: _appCubit),
+        BlocProvider.value(value: _settingsCubit),
+      ],
+      child: AppWidget(settingsController: settingsController),
+    ),
+  );
 }
 
-void showWindow(Map<String, double>? previousRect) {
-  if (previousRect != null) {
-    final rect = Rect.fromLTRB(
-      previousRect['left']!,
-      previousRect['top']!,
-      previousRect['right']!,
-      previousRect['bottom']!,
-    );
-    window.setWindowFrame(rect);
-    window.setWindowMaxSize(rect.size);
-    window.setWindowMinSize(rect.size);
-  }
-  window.setWindowVisibility(visible: true);
+Future<void> initSystemTray(Window window) async {
+  String path = (Platform.isWindows) //
+      ? 'assets/app_icon.ico'
+      : 'assets/app_icon.png';
+
+  final menu = [
+    MenuItem(label: 'Add Widgets', onClicked: appCubit.addingWidgets),
+    MenuItem(label: 'Edit Widgets', onClicked: appCubit.editWidgets),
+    MenuItem(label: 'Settings', onClicked: appCubit.showSettings),
+    MenuItem(label: 'Exit', onClicked: window.close),
+  ];
+
+  final _systemTray = SystemTray();
+
+  // We first init the systray menu and then add the menu entries
+  await _systemTray.initSystemTray(
+    title: "Desktop Widgets",
+    iconPath: path,
+  );
+
+  await _systemTray.setContextMenu(menu);
+
+  // handle system tray event
+  _systemTray.registerSystemTrayEventHandler((eventName) {
+    debugPrint("eventName: $eventName");
+    if (eventName == "leftMouseDown") {
+    } else if (eventName == "leftMouseUp") {
+      _systemTray.popUpContextMenu();
+    } else if (eventName == "rightMouseDown") {
+    } else if (eventName == "rightMouseUp") {
+      window.show();
+    }
+  });
 }
