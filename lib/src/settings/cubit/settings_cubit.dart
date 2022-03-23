@@ -26,5 +26,9 @@ class SettingsCubit extends Cubit<SettingsState> {
     );
   }
 
+  Future<void> removeWidget(String uuid) async {
+    await _settingsService.removeWidget(uuid);
+  }
+
   List<WidgetModel> loadWidgets() => _settingsService.loadWidgets();
 }

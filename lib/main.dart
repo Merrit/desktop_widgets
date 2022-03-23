@@ -73,7 +73,7 @@ Future<void> initSystemTray(Window window) async {
 
   final menu = [
     MenuItem(label: 'Add Widgets', onClicked: appCubit.addingWidgets),
-    MenuItem(label: 'Edit Widgets', onClicked: appCubit.editWidgets),
+    MenuItem(label: 'Edit Widgets', onClicked: appCubit.toggleEditWidgets),
     MenuItem(label: 'Settings', onClicked: appCubit.showSettings),
     MenuItem(label: 'Exit', onClicked: window.close),
   ];
@@ -91,12 +91,18 @@ Future<void> initSystemTray(Window window) async {
   // handle system tray event
   _systemTray.registerSystemTrayEventHandler((eventName) {
     debugPrint("eventName: $eventName");
-    if (eventName == "leftMouseDown") {
-    } else if (eventName == "leftMouseUp") {
-      _systemTray.popUpContextMenu();
-    } else if (eventName == "rightMouseDown") {
-    } else if (eventName == "rightMouseUp") {
-      window.show();
+
+    switch (eventName) {
+      case 'leftMouseDown':
+        break;
+      case 'leftMouseUp':
+        _systemTray.popUpContextMenu();
+        break;
+      case 'rightMouseDown':
+        break;
+      case 'rightMouseUp':
+        window.show();
+        break;
     }
   });
 }

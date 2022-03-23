@@ -31,19 +31,82 @@ class AppSurface extends StatelessWidget {
         }
       },
       child: BlocBuilder<AppCubit, AppState>(
-        buildWhen: (previous, current) => previous.widgets != current.widgets,
         builder: (context, state) {
           return Stack(
             children: [
               (state.editing)
-                  ? const Positioned.fill(child: GridPaper(subdivisions: 2))
+                  ? Positioned.fill(
+                      child: GridPaper(
+                        subdivisions: 1,
+                        color: const Color(0x7FC3E8F3).withOpacity(0.2),
+                      ),
+                    )
                   : const SizedBox(),
               for (var widget in state.widgets.values)
                 DesktopWidgetContainer(child: widget.widget),
+              (state.editing) ? const FinishEditingDialog() : const SizedBox(),
             ],
           );
         },
       ),
+    );
+  }
+}
+
+class FinishEditingDialog extends StatefulWidget {
+  const FinishEditingDialog({Key? key}) : super(key: key);
+
+  @override
+  State<FinishEditingDialog> createState() => _FinishEditingDialogState();
+}
+
+class _FinishEditingDialogState extends State<FinishEditingDialog> {
+  Offset position = const Offset(300, 300);
+
+  Widget? child;
+
+  @override
+  Widget build(BuildContext context) {
+    child = Card(
+      child: Column(
+        children: [
+          Container(
+            color: Colors.grey.shade900,
+            height: 40,
+            width: 200,
+            child: const Center(
+                child: Text(
+              'Edit Mode',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            )),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(15.0),
+            child: ElevatedButton(
+              onPressed: () {
+                appCubit.toggleEditWidgets();
+                // Navigator.pushReplacementNamed(context, AppSurface.routeName);
+              },
+              child: const Text('Exit edit mode'),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return Stack(
+      children: [
+        Positioned(
+          left: position.dx,
+          top: position.dy,
+          child: Draggable(
+            feedback: child!,
+            childWhenDragging: const SizedBox(),
+            onDragEnd: (details) => setState(() => position = details.offset),
+            child: child!,
+          ),
+        ),
+      ],
     );
   }
 }

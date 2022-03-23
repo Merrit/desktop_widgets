@@ -75,10 +75,7 @@ class AppCubit extends Cubit<AppState> {
     emit(state.copyWith(addingWidgets: false));
   }
 
-  void editWidgets() {
-    emit(state.copyWith(editing: true));
-    emit(state.copyWith(editing: false));
-  }
+  void toggleEditWidgets() => emit(state.copyWith(editing: !state.editing));
 
   void addWidget(DesktopWidget widget) {
     WidgetModel widgetModel;
@@ -113,5 +110,14 @@ class AppCubit extends Cubit<AppState> {
     emit(state.copyWith(widgets: widgets));
 
     _settingsCubit.saveWidget(widgetModel);
+  }
+
+  void removeWidget(WidgetModel widgetModel) {
+    final widgets = Map<String, WidgetModel>.from(state.widgets);
+    widgets.remove(widgetModel.uuid);
+
+    emit(state.copyWith(widgets: widgets));
+
+    _settingsCubit.removeWidget(widgetModel.uuid);
   }
 }

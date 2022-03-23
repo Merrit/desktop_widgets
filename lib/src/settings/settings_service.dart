@@ -47,6 +47,10 @@ class SettingsService {
     await _widgetsBox.put(key, value);
   }
 
+  Future<void> removeWidget(String key) async {
+    await _widgetsBox.delete(key);
+  }
+
   List<WidgetModel> loadWidgets() {
     final rawWidgets = _widgetsBox.values.cast<String>();
     final widgetMaps = rawWidgets.map<Map<String, dynamic>>(
