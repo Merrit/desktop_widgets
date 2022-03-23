@@ -42,16 +42,22 @@ void main() async {
   await initSystemTray(window);
 
   _windowManager.waitUntilReadyToShow().then((_) async {
-    await _windowManager.setTitleBarStyle('hidden');
-    final windowPosition = settingsService.getSavedWindowPosition() ??
-        const Rect.fromLTWH(0, 0, 800, 600);
-    await _windowManager.setBounds(windowPosition);
+    await _windowManager.setTitleBarStyle(TitleBarStyle.hidden);
     await _windowManager.setMinimizable(false);
     await _windowManager.setClosable(false);
     await _windowManager.setMovable(false);
     await _windowManager.setResizable(false);
-    await _windowManager.setSkipTaskbar(false);
-    await _windowManager.maximize();
+    await _windowManager.setSkipTaskbar(true);
+    await _windowManager.setAlwaysOnBottom(true);
+
+    Rect? windowFrame = settingsService.getSavedWindowPosition();
+
+    if (windowFrame == null) {
+      final screens = await window.getScreenList();
+      windowFrame = screens[0].visibleFrame;
+    }
+
+    await _windowManager.setBounds(windowFrame);
     await _windowManager.show();
   });
 

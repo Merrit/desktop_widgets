@@ -23,7 +23,10 @@ dependencies:
   percent_indicator: ^3.4.0
   system_tray: ^0.1.0
   uuid: ^3.0.6
-  window_manager: ^0.2.0
+  window_manager:
+    git:
+      url: https://github.com/leanflutter/window_manager.git
+      ref: 4bfcc25c1682284d411d91cd30c24473ce17d8b8
   window_size:
     git:
       url: git://github.com/google/flutter-desktop-embedding.git
