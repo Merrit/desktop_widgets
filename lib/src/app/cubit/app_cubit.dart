@@ -1,5 +1,6 @@
+import 'dart:ui';
+
 import 'package:bloc/bloc.dart';
-import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../desktop_widgets/audio/audio.dart';
@@ -34,14 +35,21 @@ class AppCubit extends Cubit<AppState> {
 
   Future<void> initialize() async {
     final availableWidgets = <DesktopWidget>[
-      const Audio('').widget,
-      const Clock('').widget,
+      Audio(uuid: '', position: const Offset(100, 100)).widget,
+      Clock(uuid: '', position: const Offset(100, 100)).widget,
     ];
+
+    final savedWidgets = _settingsCubit.loadWidgets();
+    // uuid: WidgetModel
+    final widgets = {
+      for (var widget in savedWidgets) //
+        widget.uuid: widget,
+    };
 
     emit(state.copyWith(
       screens: await _window.getScreenList(),
       availableWidgets: availableWidgets,
-      widgets: _settingsCubit.loadWidgets().map((e) => e.widget).toList(),
+      widgets: widgets,
     ));
   }
 
@@ -79,20 +87,31 @@ class AppCubit extends Cubit<AppState> {
 
     switch (widget.runtimeType) {
       case AudioWidget:
-        widgetModel = Audio(newUuid);
+        widgetModel = Audio(uuid: newUuid, position: const Offset(100, 100));
         widget = widgetModel.widget;
         break;
       case ClockWidget:
-        widgetModel = Clock(newUuid);
+        widgetModel = Clock(uuid: newUuid, position: const Offset(100, 100));
         widget = widgetModel.widget;
         break;
       default:
         throw Exception('Unable to add widget, unknown type.');
     }
 
-    final widgets = List<DesktopWidget>.from(state.widgets)..add(widget);
+    final widgets = Map<String, WidgetModel>.from(state.widgets);
+    widgets[newUuid] = widgetModel;
+
     emit(state.copyWith(widgets: widgets));
 
-    _settingsCubit.saveNewWidget(widgetModel);
+    _settingsCubit.saveWidget(widgetModel);
+  }
+
+  void updateWidget(WidgetModel widgetModel) {
+    final widgets = Map<String, WidgetModel>.from(state.widgets);
+    widgets[widgetModel.uuid] = widgetModel;
+
+    emit(state.copyWith(widgets: widgets));
+
+    _settingsCubit.saveWidget(widgetModel);
   }
 }

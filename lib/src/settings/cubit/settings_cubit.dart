@@ -17,7 +17,7 @@ class SettingsCubit extends Cubit<SettingsState> {
     settingsCubit = this;
   }
 
-  Future<void> saveNewWidget(WidgetModel widget) async {
+  Future<void> saveWidget(WidgetModel widget) async {
     final widgetMap = widget.toJson();
 
     await _settingsService.saveWidget(

@@ -31,14 +31,15 @@ class AppSurface extends StatelessWidget {
         }
       },
       child: BlocBuilder<AppCubit, AppState>(
+        buildWhen: (previous, current) => previous.widgets != current.widgets,
         builder: (context, state) {
           return Stack(
             children: [
               (state.editing)
                   ? const Positioned.fill(child: GridPaper(subdivisions: 2))
                   : const SizedBox(),
-              for (var widget in state.widgets)
-                DesktopWidgetContainer(child: widget),
+              for (var widget in state.widgets.values)
+                DesktopWidgetContainer(child: widget.widget),
             ],
           );
         },

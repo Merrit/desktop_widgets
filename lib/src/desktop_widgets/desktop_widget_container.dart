@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../app/cubit/app_cubit.dart';
 import 'desktop_widgets.dart';
 
-class DesktopWidgetContainer extends StatefulWidget {
+class DesktopWidgetContainer extends StatelessWidget {
   final DesktopWidget child;
 
   const DesktopWidgetContainer({
@@ -11,31 +12,21 @@ class DesktopWidgetContainer extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _DesktopWidgetContainerState createState() => _DesktopWidgetContainerState();
-}
-
-class _DesktopWidgetContainerState extends State<DesktopWidgetContainer> {
-  Offset position = const Offset(100, 100);
-
-  void updatePosition(Offset newPosition) =>
-      setState(() => position = newPosition);
-
-  @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
         Positioned(
-          left: position.dx,
-          top: position.dy,
+          left: child.widgetModel.position.dx,
+          top: child.widgetModel.position.dy,
           child: Draggable(
             maxSimultaneousDrags: 1,
-            feedback: widget.child,
-            childWhenDragging: Opacity(
-              opacity: .3,
-              child: widget.child,
-            ),
-            onDragEnd: (details) => updatePosition(details.offset),
-            child: widget.child,
+            feedback: child,
+            childWhenDragging: const SizedBox(),
+            onDragEnd: (details) {
+              child.widgetModel.position = details.offset;
+              appCubit.updateWidget(child.widgetModel);
+            },
+            child: child,
           ),
         ),
       ],

@@ -1,13 +1,13 @@
 part of 'app_cubit.dart';
 
-class AppState extends Equatable {
+class AppState {
   final List<Screen> screens;
   final Screen? currentAppScreen;
   final bool addingWidgets;
   final bool editing;
   final bool shouldShowSettings;
   final List<DesktopWidget> availableWidgets;
-  final List<DesktopWidget> widgets;
+  final Map<String, WidgetModel> widgets;
 
   const AppState({
     required this.screens,
@@ -26,19 +26,7 @@ class AppState extends Equatable {
         editing = false,
         shouldShowSettings = false,
         availableWidgets = const [],
-        widgets = const [];
-
-  @override
-  List<Object> get props {
-    return [
-      screens,
-      addingWidgets,
-      editing,
-      shouldShowSettings,
-      availableWidgets,
-      widgets,
-    ];
-  }
+        widgets = const {};
 
   AppState copyWith({
     List<Screen>? screens,
@@ -47,7 +35,7 @@ class AppState extends Equatable {
     bool? editing,
     bool? shouldShowSettings,
     List<DesktopWidget>? availableWidgets,
-    List<DesktopWidget>? widgets,
+    Map<String, WidgetModel>? widgets,
   }) {
     return AppState(
       screens: screens ?? this.screens,

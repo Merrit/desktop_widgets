@@ -2,10 +2,12 @@ import 'package:flutter/widgets.dart';
 
 abstract class WidgetModel {
   final String uuid;
+  Offset position;
 
-  const WidgetModel(
-    this.uuid,
-  );
+  WidgetModel({
+    required this.uuid,
+    required this.position,
+  });
 
   DesktopWidget get widget;
 
