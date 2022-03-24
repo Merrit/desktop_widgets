@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
-import '../desktop_widgets/audio/audio.dart';
+import '../desktop_widgets/audio/audio_widget_model.dart';
 import '../desktop_widgets/clock/clock.dart';
 import '../desktop_widgets/desktop_widgets.dart';
 
@@ -21,6 +21,12 @@ class SettingsService {
     required Box widgetsBox,
   })  : _settingsBox = settingsBox,
         _widgetsBox = widgetsBox;
+
+  String? getString(String key) => _settingsBox.get(key);
+
+  Future<void> saveString(String key, String value) async {
+    await _settingsBox.put(key, value);
+  }
 
   /// Loads the User's preferred ThemeMode from local or remote storage.
   Future<ThemeMode> themeMode() async => ThemeMode.system;
@@ -62,7 +68,7 @@ class SettingsService {
     for (var json in widgetMaps) {
       switch (json['widgetType']) {
         case 'Audio':
-          widgets.add(Audio.fromJson(json));
+          widgets.add(AudioWidgetModel.fromJson(json));
           break;
         case 'Clock':
           widgets.add(Clock.fromJson(json));

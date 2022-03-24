@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:bloc/bloc.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../desktop_widgets/audio/audio.dart';
+import '../../desktop_widgets/audio/audio_widget_model.dart';
 import '../../desktop_widgets/audio/audio_widget.dart';
 import '../../desktop_widgets/clock/clock.dart';
 import '../../desktop_widgets/clock/clock_widget.dart';
@@ -35,7 +35,7 @@ class AppCubit extends Cubit<AppState> {
 
   Future<void> initialize() async {
     final availableWidgets = <DesktopWidget>[
-      Audio(uuid: '', position: const Offset(100, 100)).widget,
+      AudioWidgetModel(uuid: '', position: const Offset(100, 100)).widget,
       Clock(uuid: '', position: const Offset(100, 100)).widget,
     ];
 
@@ -84,7 +84,8 @@ class AppCubit extends Cubit<AppState> {
 
     switch (widget.runtimeType) {
       case AudioWidget:
-        widgetModel = Audio(uuid: newUuid, position: const Offset(100, 100));
+        widgetModel =
+            AudioWidgetModel(uuid: newUuid, position: const Offset(100, 100));
         widget = widgetModel.widget;
         break;
       case ClockWidget:

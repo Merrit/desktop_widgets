@@ -3,14 +3,14 @@ import 'dart:ui';
 import '../desktop_widgets.dart';
 import 'audio_widget.dart';
 
-class Audio implements WidgetModel {
+class AudioWidgetModel implements WidgetModel {
   @override
   final String uuid;
 
   @override
   Offset position;
 
-  Audio({
+  AudioWidgetModel({
     required this.uuid,
     required this.position,
   });
@@ -18,13 +18,13 @@ class Audio implements WidgetModel {
   @override
   DesktopWidget get widget => AudioWidget(widgetModel: this);
 
-  factory Audio.fromJson(Map<String, dynamic> json) {
+  factory AudioWidgetModel.fromJson(Map<String, dynamic> json) {
     final positionMap = json['position'] as Map<String, dynamic>?;
     final position = (positionMap == null)
         ? const Offset(100, 100)
         : Offset(positionMap['dx']!, positionMap['dy']!);
 
-    return Audio(
+    return AudioWidgetModel(
       uuid: json['uuid'] ?? '',
       position: position,
     );
