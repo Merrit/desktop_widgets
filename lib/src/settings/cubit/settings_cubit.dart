@@ -11,24 +11,24 @@ part 'settings_state.dart';
 late final SettingsCubit settingsCubit;
 
 class SettingsCubit extends Cubit<SettingsState> {
-  final SettingsService _settingsService;
+  final SettingsService settingsService;
 
-  SettingsCubit(this._settingsService) : super(const SettingsState()) {
+  SettingsCubit(this.settingsService) : super(const SettingsState()) {
     settingsCubit = this;
   }
 
   Future<void> saveWidget(WidgetModel widget) async {
     final widgetMap = widget.toJson();
 
-    await _settingsService.saveWidget(
+    await settingsService.saveWidget(
       key: widget.uuid,
       value: json.encode(widgetMap),
     );
   }
 
   Future<void> removeWidget(String uuid) async {
-    await _settingsService.removeWidget(uuid);
+    await settingsService.removeWidget(uuid);
   }
 
-  List<WidgetModel> loadWidgets() => _settingsService.loadWidgets();
+  List<WidgetModel> loadWidgets() => settingsService.loadWidgets();
 }

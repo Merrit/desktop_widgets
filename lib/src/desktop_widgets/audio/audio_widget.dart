@@ -1,3 +1,4 @@
+import 'package:desktop_widgets/src/settings/cubit/settings_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
@@ -19,7 +20,10 @@ class AudioWidget extends StatelessWidget implements DesktopWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => AudioCubit(AudioService()),
+      create: (context) => AudioCubit(
+        AudioService(),
+        context.read<SettingsCubit>().settingsService,
+      ),
       child: Card(
         child: Container(
           padding: const EdgeInsets.all(15),
