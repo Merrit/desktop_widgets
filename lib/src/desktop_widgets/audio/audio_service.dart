@@ -71,6 +71,8 @@ class AudioService {
           this,
           id: id,
           name: name,
+          volume: 0.00,
+          isMuted: await getMuteState(id),
         ),
       );
     }
