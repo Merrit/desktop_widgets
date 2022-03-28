@@ -67,7 +67,7 @@ class SettingsService {
 
     for (var json in widgetMaps) {
       switch (json['widgetType']) {
-        case 'Audio':
+        case 'AudioWidgetModel':
           widgets.add(AudioWidgetModel.fromJson(json));
           break;
         case 'Clock':
