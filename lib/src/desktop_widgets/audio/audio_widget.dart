@@ -1,11 +1,11 @@
-import 'package:desktop_widgets/src/settings/cubit/settings_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 
+import '../../settings/cubit/settings_cubit.dart';
 import '../desktop_widgets.dart';
-import 'audio_widget_model.dart';
 import 'audio_service.dart';
+import 'audio_widget_model.dart';
 import 'cubit/audio_cubit.dart';
 
 class AudioWidget extends StatelessWidget implements DesktopWidget {
@@ -25,22 +25,25 @@ class AudioWidget extends StatelessWidget implements DesktopWidget {
         context.read<SettingsCubit>().settingsService,
       ),
       child: Card(
-        child: Container(
-          padding: const EdgeInsets.all(15),
-          child: BlocBuilder<AudioCubit, AudioState>(
-            builder: (context, state) {
-              final audioDevice = state.chosenDevice;
+        child: BlocBuilder<AudioCubit, AudioState>(
+          builder: (context, state) {
+            final audioDevice = state.chosenDevice;
 
-              if (audioDevice == null) return const SizedBox();
+            if (audioDevice == null) return const SizedBox();
 
-              final volumeDouble = audioDevice.volume;
-              final volumePercent = (volumeDouble * 100).toInt();
+            final volumeDouble = audioDevice.volume;
+            final volumePercent = (volumeDouble * 100).toInt();
 
-              final dropdownFocusNode = FocusNode();
+            final dropdownFocusNode = FocusNode();
 
-              return Column(
-                children: [
-                  Row(
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(
+                    right: 12,
+                  ),
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -53,7 +56,10 @@ class AudioWidget extends StatelessWidget implements DesktopWidget {
                       Text('$volumePercent%'),
                     ],
                   ),
-                  DropdownButton<String>(
+                ),
+                Transform.scale(
+                  scale: 0.8,
+                  child: DropdownButton<String>(
                     value: state.chosenDevice?.name,
                     selectedItemBuilder: (context) {
                       return state.outputDevices.keys
@@ -80,10 +86,10 @@ class AudioWidget extends StatelessWidget implements DesktopWidget {
                     focusNode: dropdownFocusNode,
                     underline: const SizedBox(),
                   ),
-                ],
-              );
-            },
-          ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -103,6 +109,7 @@ class VolumeIcon extends StatelessWidget {
         final color = (isMuted) ? Colors.grey : null;
 
         return IconButton(
+          splashRadius: 25,
           onPressed: () => state.chosenDevice?.toggleMute(),
           icon: Icon(
             icon,
