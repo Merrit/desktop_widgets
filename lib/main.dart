@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart' hide Window;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:system_tray/system_tray.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -18,7 +19,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
   await Acrylic.initialize();
-  await Hive.initFlutter();
+  final applicationSupportDirectory = await getApplicationSupportDirectory();
+  Hive.init(applicationSupportDirectory.path);
 
   final settingsBox = await Hive.openBox('settings');
   final widgetsBox = await Hive.openBox('widgets');
