@@ -7,6 +7,13 @@
 
 #include "flutter/generated_plugin_registrant.h"
 
+#include <iostream>
+#include "desktop_multi_window/desktop_multi_window_plugin.h"
+#include <screen_retriever/screen_retriever_plugin.h>
+#include <tray_manager/tray_manager_plugin.h>
+#include <window_manager/window_manager_plugin.h>
+#include <window_size/window_size_plugin.h>
+
 struct _MyApplication {
   GtkApplication parent_instance;
   char** dart_entrypoint_arguments;
@@ -40,15 +47,23 @@ static void my_application_activate(GApplication* application) {
   if (use_header_bar) {
     GtkHeaderBar* header_bar = GTK_HEADER_BAR(gtk_header_bar_new());
     gtk_widget_show(GTK_WIDGET(header_bar));
-    gtk_header_bar_set_title(header_bar, "desktop_widgets");
+    gtk_header_bar_set_title(header_bar, "Desktop Widgets");
     gtk_header_bar_set_show_close_button(header_bar, TRUE);
     gtk_window_set_titlebar(window, GTK_WIDGET(header_bar));
   } else {
-    gtk_window_set_title(window, "desktop_widgets");
+    gtk_window_set_title(window, "Desktop Widgets");
   }
 
-  gtk_window_set_default_size(window, 1280, 720);
-  gtk_widget_show(GTK_WIDGET(window));
+  gtk_window_set_default_size(window, 600, 400);
+
+  /* --------------------------------- Custom --------------------------------- */
+  /// Hide window by default so we can manipulate size, frame, etc and 
+  /// then show the window when we are ready.
+  ///
+  /// `gtk_widget_realize` will create the window without showing it, 
+  /// then the Dart code can call `windowManager.show();`.
+  // gtk_widget_show(GTK_WIDGET(window));   <-- Previous implementation.
+  gtk_widget_realize(GTK_WIDGET(window));
 
   g_autoptr(FlDartProject) project = fl_dart_project_new();
   fl_dart_project_set_dart_entrypoint_arguments(project, self->dart_entrypoint_arguments);
@@ -59,8 +74,18 @@ static void my_application_activate(GApplication* application) {
 
   fl_register_plugins(FL_PLUGIN_REGISTRY(view));
 
+  desktop_multi_window_plugin_set_window_created_callback([](FlPluginRegistry* registry){
+    g_autoptr(FlPluginRegistrar) window_manager_registrar =
+        fl_plugin_registry_get_registrar_for_plugin(registry, "WindowManagerPlugin");
+    window_manager_plugin_register_with_registrar(window_manager_registrar);
+    g_autoptr(FlPluginRegistrar) window_size_registrar =
+      fl_plugin_registry_get_registrar_for_plugin(registry, "WindowSizePlugin");
+    window_size_plugin_register_with_registrar(window_size_registrar);
+  });
+
   gtk_widget_grab_focus(GTK_WIDGET(view));
 }
+
 
 // Implements GApplication::local_command_line.
 static gboolean my_application_local_command_line(GApplication* application, gchar*** arguments, int* exit_status) {

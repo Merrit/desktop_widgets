@@ -3,8 +3,9 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  flutter_acrylic
-  system_tray
+  desktop_multi_window
+  screen_retriever
+  tray_manager
   window_manager
   window_size
 )

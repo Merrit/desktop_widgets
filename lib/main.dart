@@ -1,116 +1,102 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:collection/collection.dart';
+import 'package:desktop_multi_window/desktop_multi_window.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_acrylic/flutter_acrylic.dart' hide Window;
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:system_tray/system_tray.dart';
 import 'package:window_manager/window_manager.dart';
 
-import 'src/app/app_widget.dart';
-import 'src/app/cubit/app_cubit.dart';
-import 'src/settings/cubit/settings_cubit.dart';
-import 'src/settings/settings_controller.dart';
-import 'src/settings/settings_service.dart';
-import 'src/window/window.dart';
+import 'src/app.dart';
+import 'src/desktop_widgets/desktop_widgets.dart';
+import 'src/logs/logs.dart';
+import 'src/storage/storage_service.dart';
+import 'src/system_tray/system_tray_manager.dart';
+import 'src/widget_manager/cubit/cubit.dart';
+import 'src/widget_wrapper/widget_wrapper.dart';
+import 'src/window/app_window.dart';
 
-void main() async {
+late final StorageService storageService;
+
+void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
-  await windowManager.ensureInitialized();
-  await Acrylic.initialize();
-  final applicationSupportDirectory = await getApplicationSupportDirectory();
-  Hive.init(applicationSupportDirectory.path);
 
-  final settingsBox = await Hive.openBox('settings');
-  final widgetsBox = await Hive.openBox('widgets');
-  final settingsService = SettingsService(
-    settingsBox: settingsBox,
-    widgetsBox: widgetsBox,
-  );
-  final settingsController = SettingsController(settingsService);
-  await settingsController.loadSettings();
-  final _settingsCubit = SettingsCubit(settingsService);
-
-  final _windowManager = WindowManager.instance;
-  final window = Window(windowManager: _windowManager);
-
-  final _appCubit = AppCubit(
-    settingsCubit: _settingsCubit,
-    settingsService: settingsService,
-    window: window,
-  );
-
-  await initSystemTray(window);
-
-  _windowManager.waitUntilReadyToShow().then((_) async {
-    await _windowManager.setTitleBarStyle(TitleBarStyle.hidden);
-    await _windowManager.setMinimizable(false);
-    await _windowManager.setClosable(false);
-    await _windowManager.setMovable(false);
-    await _windowManager.setResizable(false);
-    await _windowManager.setSkipTaskbar(true);
-    await _windowManager.setAlwaysOnBottom(true);
-
-    Rect? windowFrame = settingsService.getSavedWindowPosition();
-
-    if (windowFrame == null) {
-      final screens = await window.getScreenList();
-      windowFrame = screens[0].visibleFrame;
+  // Handle errors caught by Flutter.
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    if (kReleaseMode && Platform.isWindows) {
+      logger.e('Flutter caught an error:', details.exception, details.stack);
     }
+  };
 
-    await _windowManager.setBounds(windowFrame);
-    await _windowManager.show();
-  });
+  // Handle platform errors not caught by Flutter.
+  PlatformDispatcher.instance.onError = (exception, stackTrace) {
+    logger.e('Platform caught an error:', exception, stackTrace);
+    return false;
+  };
 
-  runApp(
-    MultiBlocProvider(
-      providers: [
-        BlocProvider.value(value: _appCubit),
-        BlocProvider.value(value: _settingsCubit),
-      ],
-      child: AppWidget(settingsController: settingsController),
-    ),
-  );
+  storageService = await StorageService.initialize();
+  await initializeLogger(storageService);
+
+  await windowManager.ensureInitialized();
+
+  final isMainProcess = args.firstOrNull != 'multi_window';
+
+  if (isMainProcess) {
+    initializeMainProcess();
+  } else {
+    initializeWidgetProcess(args);
+  }
 }
 
-Future<void> initSystemTray(Window window) async {
-  String path = (Platform.isWindows) //
-      ? 'assets/app_icon.ico'
-      : 'assets/app_icon.png';
+Future<void> initializeMainProcess() async {
+  logger.i('Initializing main process.');
+  final appWindow = AppWindow();
+  final systemTray = SystemTrayManager(appWindow);
+  await systemTray.initialize();
 
-  final menu = [
-    MenuItem(label: 'Add Widgets', onClicked: appCubit.addingWidgets),
-    MenuItem(label: 'Edit Widgets', onClicked: appCubit.toggleEditWidgets),
-    MenuItem(label: 'Settings', onClicked: appCubit.showSettings),
-    MenuItem(label: 'Exit', onClicked: window.close),
-  ];
+  runApp(MultiBlocProvider(
+    providers: [
+      BlocProvider(
+        create: (context) => WidgetManagerCubit(storageService),
+      ),
+    ],
+    child: const AppWidget(isMainProcess: true),
+  ));
 
-  final _systemTray = SystemTray();
+  appWindow.initializeMainWindow();
+}
 
-  // We first init the systray menu and then add the menu entries
-  await _systemTray.initSystemTray(
-    title: "Desktop Widgets",
-    iconPath: path,
-  );
+void initializeWidgetProcess(List<String> args) {
+  logger.i('Initializing widget process.');
+  final int windowId = int.parse(args[1]);
+  final Map<String, dynamic> customArgs = (args[2].isEmpty)
+      ? const {}
+      : jsonDecode(args[2]) as Map<String, dynamic>;
 
-  await _systemTray.setContextMenu(menu);
+  final widgetModel = DesktopWidgetModel.fromJson(customArgs['widgetJson']);
+  final windowController = WindowController.fromWindowId(windowId);
 
-  // handle system tray event
-  _systemTray.registerSystemTrayEventHandler((eventName) {
-    debugPrint("eventName: $eventName");
+  runApp(MultiBlocProvider(
+    providers: [
+      BlocProvider(
+        create: (context) => WrapperCubit(
+          widgetModel: widgetModel.copyWith(
+            windowId: windowController.windowId,
+          ),
+          // widgetType: customArgs['widget'],
+          windowController: windowController,
+        ),
+      ),
+    ],
+    child: const AppWidget(isMainProcess: false),
+  ));
 
-    switch (eventName) {
-      case 'leftMouseDown':
-        break;
-      case 'leftMouseUp':
-        _systemTray.popUpContextMenu();
-        break;
-      case 'rightMouseDown':
-        break;
-      case 'rightMouseUp':
-        window.show();
-        break;
-    }
-  });
+  final appWindow = AppWindow();
+  appWindow.initializeWidgetWindow();
+}
+
+class TempCubit extends Cubit<int> {
+  TempCubit() : super(5);
 }
