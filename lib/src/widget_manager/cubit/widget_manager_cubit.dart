@@ -1,21 +1,22 @@
 import 'dart:convert';
 
-import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../desktop_widgets/desktop_widgets.dart';
 import '../../storage/storage_service.dart';
+import '../../window/multi_window_service.dart';
 
 part 'widget_manager_state.dart';
 
 late final WidgetManagerCubit widgetManagerCubit;
 
 class WidgetManagerCubit extends Cubit<WidgetManagerState> {
+  final MultiWindowService _multiWindowService;
   final StorageService _storageService;
 
-  WidgetManagerCubit(this._storageService)
+  WidgetManagerCubit(this._multiWindowService, this._storageService)
       : super(const WidgetManagerState(
           runningWidgets: [],
         )) {
@@ -27,13 +28,13 @@ class WidgetManagerCubit extends Cubit<WidgetManagerState> {
     List<DesktopWidgetModel> widgetModels = [];
 
     // Find widgets for any already open widget windows.
-    final List<int> windowIds = await DesktopMultiWindow.getAllSubWindowIds();
+    final List<int> windowIds = await _multiWindowService.getSubWindowIds();
 
     if (windowIds.isNotEmpty) {
       for (var windowId in windowIds) {
-        final widgetJson = await DesktopMultiWindow.invokeMethod(
-          windowId,
-          'getWidgetInfo',
+        final widgetJson = await _multiWindowService.invokeMethod(
+          targetWindowId: windowId,
+          method: 'getWidgetInfo',
         ) as String;
 
         widgetModels.add(DesktopWidgetModel.fromJson(widgetJson));
@@ -58,7 +59,7 @@ class WidgetManagerCubit extends Cubit<WidgetManagerState> {
         'widgetJson': widgetModel.toJson(),
       });
 
-      final window = await DesktopMultiWindow.createWindow(args);
+      final window = await _multiWindowService.createWindow(arguments: args);
 
       widgetModels.add(widgetModel.copyWith(windowId: window.windowId));
     }
@@ -79,7 +80,7 @@ class WidgetManagerCubit extends Cubit<WidgetManagerState> {
       'widgetJson': model.toJson(),
     });
 
-    final window = await DesktopMultiWindow.createWindow(args);
+    final window = await _multiWindowService.createWindow(arguments: args);
 
     _storageService.saveValue(
       key: id,
@@ -96,7 +97,9 @@ class WidgetManagerCubit extends Cubit<WidgetManagerState> {
   }
 
   Future<void> deleteDesktopWidget(DesktopWidgetModel widgetModel) async {
-    final window = WindowController.fromWindowId(widgetModel.windowId);
+    final window = _multiWindowService.getWindowController(
+      widgetModel.windowId,
+    );
     await window.close();
     await _storageService.deleteValue(
       widgetModel.id,
@@ -105,7 +108,7 @@ class WidgetManagerCubit extends Cubit<WidgetManagerState> {
 
     state.runningWidgets.removeWhere((element) => element.id == widgetModel.id);
     emit(state.copyWith(
-      runningWidgets: List<DesktopWidgetModel>.from(state.runningWidgets),
+      runningWidgets: [...state.runningWidgets],
     ));
   }
 }

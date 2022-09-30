@@ -8,7 +8,7 @@ class WidgetManagerState extends Equatable {
   });
 
   @override
-  List<Object> get props => [runningWidgets];
+  List<Object?> get props => [runningWidgets];
 
   WidgetManagerState copyWith({
     List<DesktopWidgetModel>? runningWidgets,

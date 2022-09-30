@@ -3,27 +3,32 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:window_size/window_size.dart' as window;
 
 import '../storage/storage_service.dart';
 
-final appWindow = AppWindow();
+late final AppWindow appWindow;
 
 class AppWindow {
-  AppWindow._() {
+  final WindowController? _windowController;
+  final bool isWidget;
+
+  AppWindow._(this._windowController) : isWidget = (_windowController != null) {
+    appWindow = this;
     instance = this;
   }
 
   static late final AppWindow instance;
   static bool _initialized = false;
 
-  factory AppWindow() {
+  factory AppWindow({WindowController? windowController}) {
     if (_initialized) return instance;
 
     _initialized = true;
-    return AppWindow._();
+    return AppWindow._(windowController);
   }
 
   void initializeMainWindow() {
@@ -33,7 +38,7 @@ class AppWindow {
     });
   }
 
-  void initializeWidgetWindow() {
+  void initializeWidgetWindow(String widgetId) {
     WindowOptions windowOptions = const WindowOptions(
       backgroundColor: Colors.transparent,
       skipTaskbar: true,
@@ -46,7 +51,7 @@ class AppWindow {
       await windowManager.setBackgroundColor(Colors.transparent); // Broken
       await windowManager.setMaximumSize(const Size(800, 800));
       await windowManager.setMinimumSize(const Size(110, 110));
-      await AppWindow().setWindowSizeAndPosition();
+      await setWindowSizeAndPosition(widgetId);
       await windowManager.show();
     });
   }
@@ -68,31 +73,44 @@ class AppWindow {
     return screenList.map((e) => e.frame.toString()).toList().toString();
   }
 
-  Future<Rect?> getSavedWindowSizeAndPosition() async {
+  Future<Rect?> getSavedWindowSizeAndPosition(String widgetId) async {
     final savedPosition = await StorageService //
         .instance!
-        .getValue(await _getScreenConfigId());
+        .getValue(widgetId, storageArea: 'widgetPositions');
     if (savedPosition == null) return null;
 
     final windowRect = rectFromJson(savedPosition);
     return windowRect;
   }
 
-  Future<void> saveWindowSizeAndPosition() async {
-    print('Saving window size and position');
-    final Rect bounds = await windowManager.getBounds();
+  Future<void> saveWindowSizeAndPosition(String widgetId) async {
+    print('Saving window size and position. id: $widgetId');
+    final windowInfo = await window.getWindowInfo();
+    Rect bounds = windowInfo.frame;
+
+    // Rect bounds = await windowManager.getBounds();
+
+    // if (isWidget) {
+    // bounds = await _windowController.
+    // }
+
+    // final screens = await window.getScreenList();
+    // screens.first.
 
     await StorageService.instance!.saveValue(
-      key: await _getScreenConfigId(),
+      key: widgetId,
       value: bounds.toJson(),
+      storageArea: 'widgetPositions',
     );
   }
 
-  Future<void> setWindowSizeAndPosition() async {
-    print('Setting window size and position.');
-    Rect currentWindowFrame = await windowManager.getBounds();
+  Future<void> setWindowSizeAndPosition(String widgetId) async {
+    print('Setting window size and position for $widgetId');
+    // Rect currentWindowFrame = await windowManager.getBounds();
+    final windowInfo = await window.getWindowInfo();
+    Rect currentWindowFrame = windowInfo.frame;
 
-    Rect? targetWindowFrame = await getSavedWindowSizeAndPosition();
+    Rect? targetWindowFrame = await getSavedWindowSizeAndPosition(widgetId);
     targetWindowFrame ??= const Rect.fromLTWH(0, 0, 300, 180);
 
     if (targetWindowFrame == currentWindowFrame) {
@@ -103,6 +121,7 @@ class AppWindow {
     assert(targetWindowFrame.size >= const Size(110, 110));
 
     window.setWindowFrame(targetWindowFrame);
+    await _windowController?.setFrame(targetWindowFrame);
   }
 }
 

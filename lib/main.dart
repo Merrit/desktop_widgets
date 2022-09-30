@@ -16,6 +16,7 @@ import 'src/system_tray/system_tray_manager.dart';
 import 'src/widget_manager/cubit/cubit.dart';
 import 'src/widget_wrapper/widget_wrapper.dart';
 import 'src/window/app_window.dart';
+import 'src/window/multi_window_service.dart';
 
 late final StorageService storageService;
 
@@ -59,7 +60,10 @@ Future<void> initializeMainProcess() async {
   runApp(MultiBlocProvider(
     providers: [
       BlocProvider(
-        create: (context) => WidgetManagerCubit(storageService),
+        create: (context) => WidgetManagerCubit(
+          MultiWindowService(),
+          storageService,
+        ),
       ),
     ],
     child: const AppWidget(isMainProcess: true),
@@ -93,8 +97,8 @@ void initializeWidgetProcess(List<String> args) {
     child: const AppWidget(isMainProcess: false),
   ));
 
-  final appWindow = AppWindow();
-  appWindow.initializeWidgetWindow();
+  final appWindow = AppWindow(windowController: windowController);
+  appWindow.initializeWidgetWindow(widgetModel.id);
 }
 
 class TempCubit extends Cubit<int> {

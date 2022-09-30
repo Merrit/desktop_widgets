@@ -111,7 +111,8 @@ class _LockMoveControls extends StatelessWidget {
 
                         windowManager.startDragging();
                       },
-                      onTapUp: (_) => appWindow.saveWindowSizeAndPosition(),
+                      onTapUp: (_) => appWindow
+                          .saveWindowSizeAndPosition(state.widgetModel.id),
                       child: const Icon(Icons.drag_indicator),
                     ),
                   ),
@@ -180,7 +181,8 @@ class _ResizeControlState extends State<_ResizeControl> {
                     await windowManager.startResizing(resizeEdge);
                     // await appWindow.saveWindowSizeAndPosition();
                   },
-                  onTapUp: (_) => appWindow.saveWindowSizeAndPosition(),
+                  onTapUp: (_) =>
+                      appWindow.saveWindowSizeAndPosition(state.widgetModel.id),
                   child: Transform.scale(
                     scale: 0.8,
                     child: const Icon(Icons.circle),

@@ -4,6 +4,7 @@ import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../../desktop_widgets/clock/clock_widget.dart';
+import '../../desktop_widgets/models/desktop_widget_model.dart';
 import '../../desktop_widgets/placeholder/placeholder_widget.dart';
 import '../widget_manager.dart';
 
@@ -83,28 +84,37 @@ class _WidgetManagerState extends State<WidgetManager>
           ),
           const VerticalDivider(),
           Flexible(
-            child: BlocBuilder<WidgetManagerCubit, WidgetManagerState>(
-              builder: (context, state) {
-                return ListView(
-                  children: [
-                    const Text('Running Widgets'),
-                    ...state.runningWidgets
-                        .map((e) => Card(
-                              child: ListTile(
-                                title: Text(e.widgetType),
-                                trailing: IconButton(
-                                  icon: const Icon(Icons.close),
-                                  onPressed: () =>
-                                      widgetManagerCubit.deleteDesktopWidget(e),
-                                ),
-                                subtitle: Text('''
-                        windowId: ${e.windowId}'''),
-                              ),
-                            ))
-                        .toList(),
-                  ],
-                );
-              },
+            child: Column(
+              children: [
+                const Text('Running Widgets'),
+                Expanded(
+                  child: BlocBuilder<WidgetManagerCubit, WidgetManagerState>(
+                    builder: (context, state) {
+                      return ListView(
+                        children: state.runningWidgets
+                            .map((DesktopWidgetModel widget) => Card(
+                                  child: ListTile(
+                                    key: ValueKey(widget),
+                                    title: Text(widget.widgetType),
+                                    trailing: IconButton(
+                                      icon: const Icon(Icons.close),
+                                      onPressed: () {
+                                        widgetManagerCubit
+                                            .deleteDesktopWidget(widget);
+                                        // Not updating when widget removed, so setState.
+                                        setState(() {});
+                                      },
+                                    ),
+                                    subtitle: Text('''
+                              windowId: ${widget.windowId}'''),
+                                  ),
+                                ))
+                            .toList(),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
         ],
