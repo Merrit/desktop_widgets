@@ -30,6 +30,7 @@ class _WidgetWrapperState extends State<WidgetWrapper> with WindowListener {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: MouseRegion(
         onEnter: (_) => wrapperCubit.updateIsHovered(true),
         onExit: (_) => wrapperCubit.updateIsHovered(false),

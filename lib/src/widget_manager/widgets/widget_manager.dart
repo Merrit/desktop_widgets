@@ -56,7 +56,6 @@ class _WidgetManagerState extends State<WidgetManager>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
       body: Row(
         children: [
           Flexible(

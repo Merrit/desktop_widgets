@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:desktop_multi_window/desktop_multi_window.dart';
@@ -23,22 +22,14 @@ late final StorageService storageService;
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Handle errors caught by Flutter.
-  FlutterError.onError = (details) {
-    FlutterError.presentError(details);
-    if (kReleaseMode && Platform.isWindows) {
-      logger.e('Flutter caught an error:', details.exception, details.stack);
-    }
-  };
-
   // Handle platform errors not caught by Flutter.
-  PlatformDispatcher.instance.onError = (exception, stackTrace) {
-    logger.e('Platform caught an error:', exception, stackTrace);
-    return false;
+  PlatformDispatcher.instance.onError = (error, stack) {
+    log.e('Uncaught platform error', error, stack);
+    return true;
   };
 
   storageService = await StorageService.initialize();
-  await initializeLogger(storageService);
+  await LoggingManager.initialize(verbose: true);
 
   await windowManager.ensureInitialized();
 
@@ -52,7 +43,7 @@ void main(List<String> args) async {
 }
 
 Future<void> initializeMainProcess() async {
-  logger.i('Initializing main process.');
+  log.i('Initializing main process.');
   final appWindow = AppWindow();
   final systemTray = SystemTrayManager(appWindow);
   await systemTray.initialize();
@@ -72,9 +63,12 @@ Future<void> initializeMainProcess() async {
   appWindow.initializeMainWindow();
 }
 
-void initializeWidgetProcess(List<String> args) {
-  logger.i('Initializing widget process.');
+Future<void> initializeWidgetProcess(List<String> args) async {
   final int windowId = int.parse(args[1]);
+  log.v('''
+Initializing widget process.
+windowId: $windowId''');
+
   final Map<String, dynamic> customArgs = (args[2].isEmpty)
       ? const {}
       : jsonDecode(args[2]) as Map<String, dynamic>;
@@ -82,23 +76,25 @@ void initializeWidgetProcess(List<String> args) {
   final widgetModel = DesktopWidgetModel.fromJson(customArgs['widgetJson']);
   final windowController = WindowController.fromWindowId(windowId);
 
-  runApp(MultiBlocProvider(
-    providers: [
-      BlocProvider(
-        create: (context) => WrapperCubit(
-          widgetModel: widgetModel.copyWith(
-            windowId: windowController.windowId,
+  runApp(
+    MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) => WrapperCubit(
+            widgetModel: widgetModel.copyWith(
+              windowId: windowController.windowId,
+            ),
+            // widgetType: customArgs['widget'],
+            windowController: windowController,
           ),
-          // widgetType: customArgs['widget'],
-          windowController: windowController,
         ),
-      ),
-    ],
-    child: const AppWidget(isMainProcess: false),
-  ));
+      ],
+      child: const AppWidget(isMainProcess: false),
+    ),
+  );
 
   final appWindow = AppWindow(windowController: windowController);
-  appWindow.initializeWidgetWindow(widgetModel.id);
+  await appWindow.initializeWidgetWindow(widgetModel.id);
 }
 
 class TempCubit extends Cubit<int> {

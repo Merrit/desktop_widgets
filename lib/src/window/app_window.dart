@@ -38,7 +38,7 @@ class AppWindow {
     });
   }
 
-  void initializeWidgetWindow(String widgetId) {
+  Future<void> initializeWidgetWindow(String widgetId) async {
     WindowOptions windowOptions = const WindowOptions(
       backgroundColor: Colors.transparent,
       skipTaskbar: true,
@@ -73,45 +73,53 @@ class AppWindow {
     return screenList.map((e) => e.frame.toString()).toList().toString();
   }
 
-  Future<Rect?> getSavedWindowSizeAndPosition(String widgetId) async {
-    final savedPosition = await StorageService //
+  Future<PositionInfo?> getSavedWindowSizeAndPosition(String widgetId) async {
+    final String? positionInfoString = await StorageService //
         .instance!
         .getValue(widgetId, storageArea: 'widgetPositions');
-    if (savedPosition == null) return null;
+    if (positionInfoString == null) return null;
 
-    final windowRect = rectFromJson(savedPosition);
-    return windowRect;
+    final PositionInfo positionInfo = PositionInfo.fromJson(positionInfoString);
+    return positionInfo;
   }
 
   Future<void> saveWindowSizeAndPosition(String widgetId) async {
     print('Saving window size and position. id: $widgetId');
+
+    final screens = await window.getScreenList();
+    print(screens.map((e) => e.frame.toJson()).toList());
+
     final windowInfo = await window.getWindowInfo();
     Rect bounds = windowInfo.frame;
 
-    // Rect bounds = await windowManager.getBounds();
-
-    // if (isWidget) {
-    // bounds = await _windowController.
-    // }
-
-    // final screens = await window.getScreenList();
-    // screens.first.
+    final positionInfo = PositionInfo(
+      bounds: bounds,
+      screenConfigId: await _getScreenConfigId(),
+    );
 
     await StorageService.instance!.saveValue(
       key: widgetId,
-      value: bounds.toJson(),
+      value: positionInfo.toJson(),
       storageArea: 'widgetPositions',
     );
   }
 
   Future<void> setWindowSizeAndPosition(String widgetId) async {
     print('Setting window size and position for $widgetId');
-    // Rect currentWindowFrame = await windowManager.getBounds();
+
     final windowInfo = await window.getWindowInfo();
     Rect currentWindowFrame = windowInfo.frame;
 
-    Rect? targetWindowFrame = await getSavedWindowSizeAndPosition(widgetId);
-    targetWindowFrame ??= const Rect.fromLTWH(0, 0, 300, 180);
+    final savedPositionInfo = await getSavedWindowSizeAndPosition(widgetId);
+    final currentScreenConfigId = await _getScreenConfigId();
+
+    Rect? targetWindowFrame;
+    if (savedPositionInfo != null &&
+        savedPositionInfo.screenConfigId == currentScreenConfigId) {
+      targetWindowFrame = savedPositionInfo.bounds;
+    } else {
+      targetWindowFrame = const Rect.fromLTWH(0, 0, 300, 180);
+    }
 
     if (targetWindowFrame == currentWindowFrame) {
       print('Target matches current window frame, nothing to do.');
@@ -120,8 +128,37 @@ class AppWindow {
 
     assert(targetWindowFrame.size >= const Size(110, 110));
 
-    window.setWindowFrame(targetWindowFrame);
+    await Future.delayed(const Duration(seconds: 1));
     await _windowController?.setFrame(targetWindowFrame);
+  }
+}
+
+class PositionInfo {
+  final Rect bounds;
+  final String screenConfigId;
+
+  PositionInfo({
+    required this.bounds,
+    required this.screenConfigId,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'bounds': bounds.toJson(),
+      'screenConfigId': screenConfigId,
+    };
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory PositionInfo.fromJson(String source) =>
+      PositionInfo.fromMap(json.decode(source));
+
+  factory PositionInfo.fromMap(Map<String, dynamic> map) {
+    return PositionInfo(
+      bounds: rectFromJson(map['bounds']),
+      screenConfigId: map['screenConfigId'],
+    );
   }
 }
 
