@@ -18,7 +18,7 @@ class WrapperCubit extends Cubit<WrapperState> {
   })  : _windowController = windowController,
         super(WrapperState(
           isHovered: false,
-          isLocked: false,
+          isLocked: true,
           widgetModel: widgetModel,
           // widgetType: widgetType,
         )) {
