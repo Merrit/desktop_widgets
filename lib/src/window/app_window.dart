@@ -75,7 +75,7 @@ class AppWindow {
 
   Future<PositionInfo?> getSavedWindowSizeAndPosition(String widgetId) async {
     final String? positionInfoString = await StorageService //
-        .instance!
+        .instance
         .getValue(widgetId, storageArea: 'widgetPositions');
     if (positionInfoString == null) return null;
 
@@ -97,7 +97,7 @@ class AppWindow {
       screenConfigId: await _getScreenConfigId(),
     );
 
-    await StorageService.instance!.saveValue(
+    await StorageService.instance.saveValue(
       key: widgetId,
       value: positionInfo.toJson(),
       storageArea: 'widgetPositions',

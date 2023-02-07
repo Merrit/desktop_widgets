@@ -8,25 +8,23 @@ import 'package:path_provider/path_provider.dart';
 class StorageService {
   final _log = Logger('StorageService');
 
-  /// This class is a singleton.
   /// Singleton instance of the service.
-  static StorageService? instance;
+  static late StorageService instance;
 
   /// Private singleton constructor.
-  StorageService._singleton();
+  StorageService._() {
+    instance = this;
+  }
 
   /// Initialize the storage access and [instance].
   /// Needs to be initialized only once, in the `main()` function.
   static Future<StorageService> initialize() async {
-    if (instance != null) return instance!;
-
     /// On desktop platforms initialize to a specific directory.
     final dir = await getApplicationSupportDirectory();
     // Defaults to ~/.local/share/feeling_finder/storage
     Hive.init('${dir.path}/storage');
 
-    instance = StorageService._singleton();
-    return instance!;
+    return StorageService._();
   }
 
   /// A generic storage pool, anything large should make its own box.
