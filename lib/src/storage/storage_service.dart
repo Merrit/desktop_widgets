@@ -56,6 +56,10 @@ class StorageService {
     return box.values;
   }
 
+  Future<void> deleteStorageAreaValues(String storageArea) async {
+    await Hive.deleteBoxFromDisk(storageArea);
+  }
+
   /// Delete a key from storage.
   Future<void> deleteValue(String key, {String? storageArea}) async {
     final Box box = await _getBox(storageArea);
