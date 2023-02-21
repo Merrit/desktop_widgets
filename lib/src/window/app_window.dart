@@ -8,11 +8,14 @@ import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:window_size/window_size.dart' as window;
 
+import '../logs/logs.dart';
 import '../storage/storage_service.dart';
 
 late final AppWindow appWindow;
 
 class AppWindow {
+  // ignored until we figure out how to handle this
+  // ignore: unused_field
   final WindowController? _windowController;
   final bool isWidget;
 
@@ -51,7 +54,12 @@ class AppWindow {
       await windowManager.setBackgroundColor(Colors.transparent); // Broken
       await windowManager.setMaximumSize(const Size(800, 800));
       await windowManager.setMinimumSize(const Size(110, 110));
-      await setWindowSizeAndPosition(widgetId);
+      // await setWindowSizeAndPosition(widgetId);
+      final result = await DesktopMultiWindow.invokeMethod(
+        1,
+        'setWindowPosition',
+      );
+      log.v('Result: $result');
       await windowManager.show();
     });
   }
@@ -70,7 +78,24 @@ class AppWindow {
 
   Future<String> _getScreenConfigId() async {
     final screenList = await window.getScreenList();
-    return screenList.map((e) => e.frame.toString()).toList().toString();
+    final largestScreenRect = _getLargestScreenRect(screenList);
+    return largestScreenRect.toJson();
+  }
+
+  /// Converts a list of [window.Screen] objects into a [Rect] with the largest values.
+  Rect _getLargestScreenRect(List<window.Screen> screens) {
+    double left = 0.0;
+    double top = 0.0;
+    double right = 0.0;
+    double bottom = 0.0;
+
+    for (final screen in screens) {
+      final frame = screen.frame;
+      right = frame.right > right ? frame.right : right;
+      bottom = frame.bottom > bottom ? frame.bottom : bottom;
+    }
+
+    return Rect.fromLTRB(left, top, right, bottom);
   }
 
   Future<PositionInfo?> getSavedWindowSizeAndPosition(String widgetId) async {
@@ -105,7 +130,7 @@ class AppWindow {
   }
 
   Future<void> setWindowSizeAndPosition(String widgetId) async {
-    print('Setting window size and position for $widgetId');
+    log.v('Setting window size and position for $widgetId');
 
     final windowInfo = await window.getWindowInfo();
     Rect currentWindowFrame = windowInfo.frame;
@@ -128,8 +153,15 @@ class AppWindow {
 
     assert(targetWindowFrame.size >= const Size(110, 110));
 
+    log.v('''
+currentWindowFrame: $currentWindowFrame
+savedPositionInfo: ${savedPositionInfo?.bounds}
+targetWindowFrame: $targetWindowFrame''');
+
     await Future.delayed(const Duration(seconds: 1));
-    await _windowController?.setFrame(targetWindowFrame);
+    await windowManager.setBounds(targetWindowFrame);
+    final newBounds = await windowManager.getBounds();
+    log.v('New bounds: $newBounds');
   }
 }
 

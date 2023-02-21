@@ -3,9 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
-import '../../desktop_widgets/clock/clock_widget.dart';
-import '../../desktop_widgets/models/desktop_widget_model.dart';
-import '../../desktop_widgets/placeholder/placeholder_widget.dart';
+import '../../desktop_widgets/desktop_widgets.dart';
 import '../widget_manager.dart';
 
 class WidgetManager extends StatefulWidget {
@@ -70,13 +68,32 @@ class _WidgetManagerState extends State<WidgetManager>
                   },
                   child: const NewClockWidget(),
                 ),
-                const SizedBox(height: 50),
-                const Center(child: Text('Placeholder')),
-                InkWell(
-                  onTap: () async {
-                    widgetManagerCubit.createDesktopWidget('Placeholder');
-                  },
-                  child: const PlaceholderWidget(),
+                // TODO: Find a way to create a preview of widgets that isn't
+                // a full-fledged interactable widget.
+                //
+                // Maybe the widgets should be a customization of a singular
+                // widget that can be configured to display different things,
+                // including a static preview of the widget? Eg. NotesWidget.preview
+                ListTile(
+                  title: const Text('Notes'),
+                  subtitle: const Text('Sticky notes for your desktop.'),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.add),
+                    onPressed: () async {
+                      widgetManagerCubit.createDesktopWidget('Notes');
+                    },
+                  ),
+                ),
+
+                ListTile(
+                  title: const Text('Placeholder'),
+                  subtitle: const Text('A placeholder widget.'),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.add),
+                    onPressed: () async {
+                      widgetManagerCubit.createDesktopWidget('Placeholder');
+                    },
+                  ),
                 ),
               ],
             ),
