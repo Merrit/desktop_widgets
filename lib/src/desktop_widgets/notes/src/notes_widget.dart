@@ -1,33 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../desktop_widgets.dart';
 
-/// Allows the user to view and edit a block of text.
-class NotesWidget extends StatefulWidget {
-  final DesktopWidgetModel desktopWidgetModel;
+/// Widget that displays a text field for taking notes.
+class NotesWidget extends StatelessWidget {
+  final DesktopWidgetModel widgetModel;
 
   const NotesWidget(
-    this.desktopWidgetModel, {
+    this.widgetModel, {
     Key? key,
   }) : super(key: key);
-
-  @override
-  State<NotesWidget> createState() => _NotesWidgetState();
-}
-
-class _NotesWidgetState extends State<NotesWidget> {
-  final focusNode = FocusNode();
-  final textController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    focusNode.addListener(() {
-      if (!focusNode.hasFocus) {
-        // save the text
-      }
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,16 +18,61 @@ class _NotesWidgetState extends State<NotesWidget> {
     final width = mediaQuery.size.width;
     final height = mediaQuery.size.height;
 
-    return SizedBox(
-      width: width,
-      height: height,
-      child: TextField(
-        controller: textController,
-        maxLines: null,
-        decoration: InputDecoration(
-          border: InputBorder.none,
-          hintText: 'New note...',
-          hintStyle: Theme.of(context).textTheme.bodyMedium,
+    return BlocProvider(
+      create: (context) => NotesCubit(widgetModel),
+      lazy: false,
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: const _NotesWidgetView(),
+      ),
+    );
+  }
+}
+
+class _NotesWidgetView extends StatefulWidget {
+  const _NotesWidgetView();
+
+  @override
+  State<_NotesWidgetView> createState() => _NotesWidgetViewState();
+}
+
+class _NotesWidgetViewState extends State<_NotesWidgetView> {
+  final focusNode = FocusNode();
+  final textController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    loadNoteText();
+
+    focusNode.addListener(() {
+      print('focusNode.hasFocus: ${focusNode.hasFocus}');
+      if (!focusNode.hasFocus) {
+        context.read<NotesCubit>().saveNoteText(textController.text);
+      }
+    });
+  }
+
+  /// Load note text from storage if it exists.
+  Future<void> loadNoteText() async {
+    final notesCubit = context.read<NotesCubit>();
+    await context.read<NotesCubit>().loadNoteText();
+    textController.text = notesCubit.state.noteText;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: textController,
+      focusNode: focusNode,
+      maxLines: null,
+      decoration: const InputDecoration(
+        border: InputBorder.none,
+        hintText: 'New note...',
+        hintStyle: TextStyle(
+          color: Colors.grey,
+          fontStyle: FontStyle.italic,
         ),
       ),
     );
