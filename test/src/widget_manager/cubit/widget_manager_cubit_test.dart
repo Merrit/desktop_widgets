@@ -66,7 +66,7 @@ void main() {
     await cubit.createDesktopWidget('ClockWidget');
     await cubit.createDesktopWidget('ClockWidget');
     expect(state.runningWidgets.length, 2);
-    await cubit.deleteDesktopWidget(state.runningWidgets.first);
+    await cubit.removeDesktopWidget(state.runningWidgets.first);
     expect(state.runningWidgets.length, 1);
   });
 }

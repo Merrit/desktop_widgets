@@ -116,7 +116,7 @@ class _WidgetManagerState extends State<WidgetManager>
                                       icon: const Icon(Icons.close),
                                       onPressed: () {
                                         widgetManagerCubit
-                                            .deleteDesktopWidget(widget);
+                                            .removeDesktopWidget(widget);
                                         // Not updating when widget removed, so setState.
                                         setState(() {});
                                       },
