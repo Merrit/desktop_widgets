@@ -7,7 +7,8 @@ import '../../desktop_widgets/desktop_widgets.dart';
 import '../../window/app_window.dart';
 import '../widget_wrapper.dart';
 
-class WidgetWrapper extends StatefulWidget {
+/// A wrapper widget that handles the window management for a widget.
+class WidgetWrapper extends StatefulWidget with WindowListener {
   const WidgetWrapper({Key? key}) : super(key: key);
 
   @override
@@ -15,6 +16,17 @@ class WidgetWrapper extends StatefulWidget {
 }
 
 class _WidgetWrapperState extends State<WidgetWrapper> with WindowListener {
+  final focusNode = FocusNode();
+
+  @override
+  void onWindowBlur() {
+    // When the window loses focus, we want to remove focus from the child
+    // widget so that it doesn't continue to receive keyboard events,
+    // text fields don't continue to show a flashing cursor, etc.
+    focusNode.requestFocus();
+    super.onWindowBlur();
+  }
+
   @override
   void initState() {
     windowManager.addListener(this);
@@ -29,7 +41,10 @@ class _WidgetWrapperState extends State<WidgetWrapper> with WindowListener {
 
   @override
   Widget build(BuildContext context) {
+    final wrapperCubit = context.read<WrapperCubit>();
+
     return Scaffold(
+      // backgroundColor: Colors.transparent,
       body: MouseRegion(
         onEnter: (_) => wrapperCubit.updateIsHovered(true),
         onExit: (_) => wrapperCubit.updateIsHovered(false),
@@ -40,6 +55,9 @@ class _WidgetWrapperState extends State<WidgetWrapper> with WindowListener {
               case 'ClockWidget':
                 wrappedWidget = const NewClockWidget();
                 break;
+              case 'Notes':
+                wrappedWidget = NotesWidget(state.widgetModel);
+                break;
               case 'Placeholder':
                 wrappedWidget = const PlaceholderWidget();
                 break;
@@ -47,26 +65,29 @@ class _WidgetWrapperState extends State<WidgetWrapper> with WindowListener {
                 wrappedWidget = const Placeholder();
             }
 
-            return Container(
-              color: state.isLocked
-                  ? Colors.transparent
-                  : Colors.grey.withOpacity(0.2),
-              child: Stack(
-                alignment: Alignment.center,
-                fit: StackFit.expand,
-                children: [
-                  FittedBox(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 15),
-                      child: wrappedWidget,
+            return Focus(
+              focusNode: focusNode,
+              child: Container(
+                color: state.isLocked
+                    ? Colors.transparent
+                    : Colors.grey.withOpacity(0.2),
+                child: Stack(
+                  alignment: Alignment.center,
+                  fit: StackFit.expand,
+                  children: [
+                    FittedBox(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 15),
+                        child: wrappedWidget,
+                      ),
                     ),
-                  ),
-                  const _LockMoveControls(),
-                  const _ResizeControl(Alignment.topLeft),
-                  const _ResizeControl(Alignment.topRight),
-                  const _ResizeControl(Alignment.bottomRight),
-                  const _ResizeControl(Alignment.bottomLeft),
-                ],
+                    const _LockMoveControls(),
+                    const _ResizeControl(Alignment.topLeft),
+                    const _ResizeControl(Alignment.topRight),
+                    const _ResizeControl(Alignment.bottomRight),
+                    const _ResizeControl(Alignment.bottomLeft),
+                  ],
+                ),
               ),
             );
           },
@@ -81,6 +102,8 @@ class _LockMoveControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final wrapperCubit = context.read<WrapperCubit>();
+
     return Positioned.fill(
       child: Align(
         alignment: Alignment.centerRight,

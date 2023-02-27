@@ -96,7 +96,7 @@ class WidgetManagerCubit extends Cubit<WidgetManagerState> {
     ));
   }
 
-  Future<void> deleteDesktopWidget(DesktopWidgetModel widgetModel) async {
+  Future<void> removeDesktopWidget(DesktopWidgetModel widgetModel) async {
     final window = _multiWindowService.getWindowController(
       widgetModel.windowId,
     );
@@ -105,6 +105,9 @@ class WidgetManagerCubit extends Cubit<WidgetManagerState> {
       widgetModel.id,
       storageArea: 'savedWidgets',
     );
+
+    // Delete any saved values for this widget.
+    await _storageService.deleteStorageAreaValues(widgetModel.id);
 
     state.runningWidgets.removeWhere((element) => element.id == widgetModel.id);
     emit(state.copyWith(

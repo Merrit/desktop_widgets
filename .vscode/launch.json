@@ -8,21 +8,24 @@
             "name": "Debug",
             "request": "launch",
             "type": "dart",
-            "program": "lib/main.dart"
+            "program": "lib/main.dart",
+            "preLaunchTask": "build_runner watch"
         },
         {
             "name": "Profile mode",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile",
-            "program": "lib/main.dart"
+            "program": "lib/main.dart",
+            "preLaunchTask": "build_runner watch"
         },
         {
             "name": "Release mode",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release",
-            "program": "lib/main.dart"
+            "program": "lib/main.dart",
+            "preLaunchTask": "build_runner watch"
         }
     ]
 }
