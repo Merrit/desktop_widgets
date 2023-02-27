@@ -41,6 +41,8 @@ class _WidgetWrapperState extends State<WidgetWrapper> with WindowListener {
 
   @override
   Widget build(BuildContext context) {
+    final wrapperCubit = context.read<WrapperCubit>();
+
     return Scaffold(
       // backgroundColor: Colors.transparent,
       body: MouseRegion(
@@ -100,6 +102,8 @@ class _LockMoveControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final wrapperCubit = context.read<WrapperCubit>();
+
     return Positioned.fill(
       child: Align(
         alignment: Alignment.centerRight,

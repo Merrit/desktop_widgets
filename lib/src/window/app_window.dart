@@ -45,22 +45,14 @@ class AppWindow {
     WindowOptions windowOptions = const WindowOptions(
       backgroundColor: Colors.transparent,
       skipTaskbar: true,
-      titleBarStyle: TitleBarStyle.hidden,
     );
 
     windowManager.waitUntilReadyToShow(windowOptions, () async {
-      // await windowManager.setMaximizable(false); // Not implemented.
+      await windowManager.setAsFrameless();
       await windowManager.setAlwaysOnBottom(true);
-      await windowManager.setBackgroundColor(Colors.transparent); // Broken
-      await windowManager.setMaximumSize(const Size(800, 800));
-      await windowManager.setMinimumSize(const Size(110, 110));
-      // await setWindowSizeAndPosition(widgetId);
-      final result = await DesktopMultiWindow.invokeMethod(
-        1,
-        'setWindowPosition',
-      );
-      log.v('Result: $result');
-      await windowManager.show();
+      // Transparent background color is broken in sub-windows.
+      // https://github.com/leanflutter/window_manager/issues/179
+      await windowManager.setBackgroundColor(Colors.transparent);
     });
   }
 
@@ -129,12 +121,16 @@ class AppWindow {
     );
   }
 
-  Future<void> setWindowSizeAndPosition(String widgetId) async {
-    log.v('Setting window size and position for $widgetId');
+  Future<void> setWidgetWindowSizeAndPosition({
+    required String widgetId,
+    required WindowController windowController,
+  }) async {
+    log.v('''
+widgetId: $widgetId
+windowId: ${windowController.windowId}
+Setting window size and position''');
 
-    final windowInfo = await window.getWindowInfo();
-    Rect currentWindowFrame = windowInfo.frame;
-
+    final currentWindowFrame = await windowManager.getBounds();
     final savedPositionInfo = await getSavedWindowSizeAndPosition(widgetId);
     final currentScreenConfigId = await _getScreenConfigId();
 
@@ -147,21 +143,68 @@ class AppWindow {
     }
 
     if (targetWindowFrame == currentWindowFrame) {
-      print('Target matches current window frame, nothing to do.');
+      log.v('''
+widgetId: $widgetId
+windowId: ${windowController.windowId}
+Target matches current window frame, nothing to do.''');
       return;
     }
 
     assert(targetWindowFrame.size >= const Size(110, 110));
 
-    log.v('''
-currentWindowFrame: $currentWindowFrame
-savedPositionInfo: ${savedPositionInfo?.bounds}
-targetWindowFrame: $targetWindowFrame''');
-
-    await Future.delayed(const Duration(seconds: 1));
     await windowManager.setBounds(targetWindowFrame);
-    final newBounds = await windowManager.getBounds();
-    log.v('New bounds: $newBounds');
+    Rect newBounds = await windowManager.getBounds();
+
+    if (newBounds != targetWindowFrame) {
+      // Adjust the target window frame to account for the title bar.
+      targetWindowFrame = _adjustTargetWindowFrameForTitleBar(
+        targetWindowFrame: targetWindowFrame,
+        newBounds: newBounds,
+      );
+
+      await windowController.setFrame(targetWindowFrame);
+      newBounds = await windowManager.getBounds();
+    }
+
+    log.v('''
+widgetId: $widgetId
+windowId: ${windowController.windowId}
+currentWindowFrame: ${currentWindowFrame.toDebugString()}
+savedPositionInfo: ${savedPositionInfo?.bounds.toDebugString()}
+targetWindowFrame: ${targetWindowFrame.toDebugString()}
+newBounds: ${newBounds.toDebugString()}''');
+
+    await windowManager.show();
+  }
+
+  /// Adjust the widget window frame to account for the title bar.
+  ///
+  /// This is a workaround for the fact that sometimes requesting to set a
+  /// window frame to a specific size will result in a slightly different size
+  /// being set because we are hiding the window decorations.
+  Rect _adjustTargetWindowFrameForTitleBar({
+    required Rect targetWindowFrame,
+    required Rect newBounds,
+  }) {
+    final max = (targetWindowFrame.top > newBounds.top)
+        ? targetWindowFrame.top
+        : newBounds.top;
+
+    final min = (targetWindowFrame.top < newBounds.top)
+        ? targetWindowFrame.top
+        : newBounds.top;
+
+    final topDiff = max - min;
+    if (topDiff.abs() > 50) {
+      return targetWindowFrame;
+    }
+
+    return Rect.fromLTWH(
+      targetWindowFrame.left,
+      targetWindowFrame.top + topDiff,
+      targetWindowFrame.width,
+      targetWindowFrame.height,
+    );
   }
 }
 
@@ -205,6 +248,11 @@ extension on Rect {
   }
 
   String toJson() => json.encode(toMap());
+
+  /// toString that shows the width and height of the rect.
+  String toDebugString() {
+    return 'left: $left, top: $top, width: $width, height: $height';
+  }
 }
 
 Rect rectFromJson(String source) {

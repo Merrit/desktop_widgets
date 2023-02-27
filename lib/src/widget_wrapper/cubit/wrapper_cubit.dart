@@ -1,13 +1,13 @@
 import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../desktop_widgets/desktop_widgets.dart';
+import '../../logs/logging_manager.dart';
 import '../../window/app_window.dart';
 
 part 'wrapper_state.dart';
-
-late final WrapperCubit wrapperCubit;
 
 class WrapperCubit extends Cubit<WrapperState> {
   // ignored until we figure out how to handle this
@@ -23,24 +23,39 @@ class WrapperCubit extends Cubit<WrapperState> {
           isLocked: true,
           widgetModel: widgetModel,
         )) {
-    wrapperCubit = this;
+    log.v(
+        'Created WrapperCubit. WidgetId: ${state.widgetModel.id}, WindowId: ${_windowController.windowId}');
+    init();
+  }
 
-    DesktopMultiWindow.setMethodHandler((call, fromWindowId) async {
-      if (call.arguments.toString() == "ping") {
-        return "pong";
-      }
+  Future<void> init() async {
+    DesktopMultiWindow.setMethodHandler(_handleMethodCalls);
+    await AppWindow.instance.setWidgetWindowSizeAndPosition(
+      widgetId: state.widgetModel.id,
+      windowController: _windowController,
+    );
+  }
 
-      if (call.method == 'getWidgetInfo') {
-        return Future.value(state.widgetModel.toJson());
-      }
+  /// Method handler for DesktopMultiWindow seems unreliable.
+  Future<dynamic> _handleMethodCalls(MethodCall call, int fromWindowId) async {
+    if (call.arguments.toString() == "ping") {
+      return "pong";
+    }
 
-      if (call.method == 'setWindowPosition') {
-        await AppWindow.instance.setWindowSizeAndPosition(state.widgetModel.id);
-        return Future.value(null);
-      }
+    if (call.method == 'getWidgetInfo') {
+      return Future.value(state.widgetModel.toJson());
+    }
 
-      return Future.value();
-    });
+    if (call.method == 'setWindowPosition') {
+      // await AppWindow.instance.setWidgetWindowSizeAndPosition(
+      //   widgetId: state.widgetModel.id,
+      //   windowController: _windowController,
+      // );
+
+      // return Future.value(null);
+    }
+
+    return Future.value();
   }
 
   void toggleIsLocked() => emit(state.copyWith(isLocked: !state.isLocked));
